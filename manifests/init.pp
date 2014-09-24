@@ -1,22 +1,30 @@
 class statsd(
+  $ensure           = $statsd::params::ensure,
+  $nodemoduledir    = $statsd::params::nodemoduledir,
   $graphiteserver   = $statsd::params::graphiteserver,
   $graphiteport     = $statsd::params::graphiteport,
   $backends         = $statsd::params::backends,
   $address          = $statsd::params::address,
   $listenport       = $statsd::params::listenport,
+  $adminport        = $statsd::params::adminport,
   $flushinterval    = $statsd::params::flushinterval,
   $percentthreshold = $statsd::params::percentthreshold,
-  $ensure           = $statsd::params::ensure,
+  $deleteidlestats  = $statsd::params::deleteidlestats,
+  $dumpmessages     = $statsd::params::dumpmessages,
+  $flushcounts      = $statsd::params::flushcounts,
+  $configurereload  = $statsd::params::configurereload,
+  $initscript       = $statsd::params::initscript,
+  $statsjs          = $statsd::params::statsjs,
+  $statsduser       = $statsd::params::statsduser,
+  $statsdgroup      = $statsd::params::statsdgroup, 
   $provider         = $statsd::params::provider,
   $config           = $statsd::params::config,
-  $statsjs          = $statsd::params::statsjs,
-  $init_script      = $statsd::params::init_script,
-  $node_manage      = $statsd::params::node_manage,
-  $node_version     = $statsd::params::node_version,
+  $nodemanage       = $statsd::params::nodemanage,
+  $nodeversion      = $statsd::params::nodeversion,
 ) inherits statsd::params {
 
-  if $node_manage == true {
-    class { '::nodejs': version => $node_version }
+  if $nodemanage == true {
+    class { '::nodejs': version => $nodeversion }
   }
 
   package { 'statsd':
@@ -25,8 +33,10 @@ class statsd(
     notify  => Service['statsd'],
   }
 
-  $configfile  = '/etc/statsd/localConfig.js'
-  $logfile     = '/var/log/statsd/statsd.log'
+  $configfile  = '/etc/statsd/localConfig${listenport}.js'
+  $logfile     = '/var/log/statsd/statsd${listenport}.log'
+  $initdfile   = '/etc/init.d/statsd${listenport}'
+  $defaultfile = '/etc/default/statsd${listenport}'
 
   file { '/etc/statsd':
     ensure => directory,
@@ -41,14 +51,14 @@ class statsd(
     mode    => '0444',
     notify  => Service['statsd'],
   }
-  file { '/etc/init.d/statsd':
-    source  => $init_script,
+  file { $initdfile:
+    source  => $initscript,
     owner   => 'root',
     group   => 'root',
     mode    => '0755',
     notify  => Service['statsd'],
   }
-  file {  '/etc/default/statsd':
+  file {  $defaultfile:
     content => template('statsd/statsd-defaults.erb'),
     owner   => 'root',
     group   => 'root',
@@ -57,8 +67,8 @@ class statsd(
   }
   file { '/var/log/statsd':
     ensure => directory,
-    owner  => 'nobody',
-    group  => 'root',
+    owner  => $statsduser, 
+    group  => $statsdgroup,
     mode   => '0770',
   }
   file { '/usr/local/sbin/statsd':

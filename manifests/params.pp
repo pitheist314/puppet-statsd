@@ -1,31 +1,52 @@
 class statsd::params {
+  $ensure           = 'present'
+  $nodemoduledir  = ''
+
   $graphiteserver   = 'localhost'
   $graphiteport     = '2003'
   $backends         = [ './backends/graphite' ]
   $address          = '0.0.0.0'
   $listenport       = '8125'
+  $adminport        = '8126'
   $flushinterval    = '10000'
   $percentthreshold = ['90']
-  $ensure           = 'present'
+  $deleteidlestats  = false
+  $dumpmessages     = false
+  $flushcounts      = true
+  $configreload     = true
+
+  $initscript       = ''
+  $statsjs          = ''
+
+  $statsduser       = 'root'
+  $statsgroup       = 'root'
+
   $provider         = 'npm'
   $config           = { }
-  $node_module_dir  = ''
-  $node_manage      = true
-  $node_version     = 'present'
+  $nodemanage      = true
+  $nodeversion     = 'present'
+
+  $host             = '0.0.0.0'
+  $proxyport        = 8125
+  $nodes            = [ ]
+  $udpversion       = 'udp4'
+  $checkinterval    = 1000
+  $cachesize        = 10000
+  
 
   case $::osfamily {
-    'RedHat': {
-      $init_script = 'puppet:///modules/statsd/statsd-init-rhel'
-      if ! $node_module_dir {
+    'RedHat', 'CentOS': {
+      $initscript = 'puppet:///modules/statsd/statsd-init-rhel'
+      if ! $nodemoduledir {
         $statsjs = '/usr/lib/node_modules/statsd/stats.js'
       }
       else {
-        $statsjs = "${node_module_dir}/statsd/stats.js"
+        $statsjs = "${nodemoduledir}/statsd/stats.js"
       }
     }
     'Debian': {
-      $init_script = 'puppet:///modules/statsd/statsd-init'
-      if ! $node_module_dir {
+      $initscript = 'puppet:///modules/statsd/statsd-init'
+      if ! $nodemoduledir {
         case $provider {
           'apt': {
             $statsjs = '/usr/share/statsd/stats.js'
@@ -39,7 +60,7 @@ class statsd::params {
         }
       } 
       else {
-        $statsjs = "${node_module_dir}/statsd/stats.js"
+        $statsjs = "${nodemoduledir}/statsd/stats.js"
       }
     }
     default: {
